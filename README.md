@@ -8,7 +8,7 @@ that has been packaged into +yaml namespace by Yauhen Yakimovich.
 Installation
 ------------
 
-Just add the codes and all subfolders to Matlab path by
+Just add the code and all subfolders to the MATLAB path: 
 
 ```matlab
 addpath(genpath('path/to/codes'));
