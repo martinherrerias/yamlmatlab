@@ -1,12 +1,10 @@
 ## yamlmatlab
-----------
 
 This is a github copy of https://code.google.com/p/yamlmatlab/
 that has been packaged into +yaml namespace by Yauhen Yakimovich.
 
 
 ## Installation
-------------
 
 Just add the code and all subfolders to the MATLAB path: 
 
@@ -16,7 +14,6 @@ addpath(genpath('path/to/code'));
 
 
 ## Usage
------
 
 Reading in:
 
@@ -34,7 +31,6 @@ Writing out
 
 
 ## Main authors
-------------
 
 * Jiri Cigler, Dept. of Control Engineering, CTU Prague http://support.dce.felk.cvut.cz/pub/ciglejir/
 * Jan Siroky, Energocentrum PLUS, s.r.o.
