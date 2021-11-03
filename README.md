@@ -3,6 +3,7 @@
 This is a github copy of https://code.google.com/p/yamlmatlab/
 that has been packaged into +yaml namespace by Yauhen Yakimovich.
 
+Includes minor fixes and updates from Jesus Briales, Rob Campbell, Ion Iturbide, and myself.
 
 ## Installation
 
@@ -11,7 +12,6 @@ Just add the code and all subfolders to the MATLAB path:
 ```matlab
 addpath(genpath('path/to/code'));
 ```
-
 
 ## Usage
 
@@ -28,7 +28,6 @@ Writing out
  x.name='Martin';
  yaml.WriteYaml('test.yaml',x)
 ```
-
 
 ## Main authors
 
