@@ -1,20 +1,18 @@
-function result = ReadYamlRaw(filename, verbose, nosuchfileaction, treatasdata)
-import yaml.*;
-if ~exist('verbose','var')
-        verbose = 0;
-    end;
+function result = ReadYamlRaw(filename,~,nosuchfileaction, treatasdata)
+    import yaml.*;
+    % if ~exist('verbose','var')
+    %     verbose = 0;
+    % end
     if ~exist('nosuchfileaction','var')
         nosuchfileaction = 0;
-    end;
-    if ~ismember(nosuchfileaction,[0,1])
+    elseif ~ismember(nosuchfileaction,[0,1])
         error('nosuchfileexception parameter must be 0,1 or missing.');
-    end;
+    end
     if(~exist('treatasdata','var'))
         treatasdata = 0;
-    end;
-    if ~ismember(treatasdata,[0,1])
+    elseif ~ismember(treatasdata,[0,1])
         error('treatasdata parameter must be 0,1 or missing.');
-    end;
+    end
     [pth,~,~] = fileparts(mfilename('fullpath'));       
     try
         import('org.yaml.snakeyaml.*');
@@ -25,20 +23,12 @@ if ~exist('verbose','var')
         	javaaddpath(dp); % javaaddpath clears global variables!?
         end
         import('org.yaml.snakeyaml.*');
-    end;
-    setverblevel(verbose);
+    end
+    % setverblevel(verbose);
     result = load_yaml(filename, nosuchfileaction, treatasdata);
 end
-function result = load_yaml(inputfilename, nosuchfileaction, treatasdata)
-import yaml.*;
-persistent nsfe;
-    if exist('nosuchfileaction','var') %isempty(nsfe) && 
-        nsfe = nosuchfileaction;
-    end;
-    persistent tadf;
-    if isempty(tadf) && exist('treatasdata','var')
-        tadf = treatasdata;
-    end;
+function result = load_yaml(inputfilename, nsfe, tadf)
+    import yaml.*;
     yaml = org.yaml.snakeyaml.Yaml(); % It appears that Java objects cannot be persistent!?
     if ~tadf
         [filepath, filename, fileext] = fileparts(inputfilename);
@@ -46,18 +36,18 @@ persistent nsfe;
             pathstore = cd();
         else
             pathstore = cd(filepath);
-        end;
-    end;
+        end
+    end
     try
         if ~tadf
             result = scan(yaml.load(fileread([filename, fileext])));
         else
             result = scan(yaml.load(inputfilename));
-        end;
+        end
     catch ex
         if ~tadf
             cd(pathstore);
-        end;
+        end
         switch ex.identifier
             case 'MATLAB:fileread:cannotOpenFile'
                 if nsfe == 1
@@ -66,17 +56,16 @@ persistent nsfe;
                     warning('MATLAB:MATYAML:FileNotFound', ['No such file to read: ',filename,fileext]);
                     result = struct();
                     return;
-                end;
-        end;
+                end
+        end
         rethrow(ex);
-    end;
+    end
     if ~tadf
         cd(pathstore);    
-    end;
+    end
 end
 function result = scan(r)
-import yaml.*;
-if isa(r, 'char')
+    if isa(r, 'char')
         result = scan_string(r);
     elseif isa(r, 'double')
         result = scan_numeric(r);
@@ -90,26 +79,21 @@ if isa(r, 'char')
         result = scan_map(r);
     else
         error(['Unknown data type: ' class(r)]);
-    end;
+    end
 end
 function result = scan_string(r)
-import yaml.*;
 result = char(r);
 end
 function result = scan_numeric(r)
-import yaml.*;
 result = double(r);
 end
 function result = scan_logical(r)
-import yaml.*;
 result = logical(r);
 end
 function result = scan_datetime(r)
-import yaml.*;
 result = DateTime(r);
 end
 function result = scan_list(r)
-import yaml.*;
 result = cell(r.size(),1);
     it = r.iterator();
     ii = 1;
@@ -117,10 +101,9 @@ result = cell(r.size(),1);
         i = it.next();
         result{ii} = scan(i);
         ii = ii + 1;
-    end;
+    end
 end
 function result = scan_map(r)
-import yaml.*;
 it = r.keySet().iterator();
     while it.hasNext()
         next = it.next();
@@ -130,49 +113,47 @@ it = r.keySet().iterator();
             result.(ich) = perform_import(r.get(java.lang.String(ich)));
         else
             result.(genvarname(ich)) = scan(r.get(java.lang.String(ich)));
-        end;
-    end;
+        end
+    end
     if not(exist('result','var'))
         result={};
     end
 end
 function result = iskw_import(r)
-import yaml.*;
 result = isequal(r, 'import');
 end
 function result = perform_import(r)
-import yaml.*;
-r = scan(r);
+    r = scan(r);
     if iscell(r) && all(cellfun(@ischar, r))
         result = cellfun(@load_yaml, r, 'UniformOutput', 0);
     elseif ischar(r)
         result = {load_yaml(r)};
     else
         disp(r);
-        error(['Importer does not unterstand given filename. '               'Invalid node displayed above.']);
-    end;
+        error('Importer does not unterstand given filename. Invalid node displayed above.');
+    end
 end
-function setverblevel(level)
-import yaml.*;
-global verbose_readyaml;
-    verbose_readyaml = 0;
-    if exist('level','var')
-        verbose_readyaml = level;
-    end;
-end
-function result = getverblevel()
-import yaml.*;
-global verbose_readyaml; 
-    result = verbose_readyaml;
-end
-function info(level, text, value_to_display)
-import yaml.*;
-if getverblevel() >= level
-        fprintf(text);
-        if exist('value_to_display','var')
-            disp(value_to_display);
-        else
-            fprintf('\n');
-        end;
-    end;
-end
+% function setverblevel(level)
+%     import yaml.*;
+%     global verbose_readyaml;
+%     verbose_readyaml = 0;
+%     if exist('level','var')
+%         verbose_readyaml = level;
+%     end
+% end
+% function result = getverblevel()
+%     import yaml.*;
+%     global verbose_readyaml; 
+%     result = verbose_readyaml;
+% end
+% function info(level, text, value_to_display)
+%     import yaml.*;
+%     if getverblevel() >= level
+%         fprintf(text);
+%         if exist('value_to_display','var')
+%             disp(value_to_display);
+%         else
+%             fprintf('\n');
+%         end
+%     end
+% end

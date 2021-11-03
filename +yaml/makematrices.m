@@ -1,103 +1,51 @@
-function result = makematrices(r, makeords)
-import yaml.*;
-result = recurse(r, 0, [], makeords);
-end
-function result = recurse(data, level, addit, makeords)
-import yaml.*;
-if iscell(data)
-        result = iter_cell(data, level, addit, makeords);
-    elseif isstruct(data)
-        result = iter_struct(data, level, addit, makeords);
-    else
-        result = scan_data(data, level, addit);
-    end;
-end
-function result = iter_cell(data, level, addit, makeords)
-import yaml.*;
-if  isvector(data) &&         iscell_all(data) &&         isvector_all(data) &&         isaligned_all(data) &&         ismatrixrow_all(data)
-        tmp = data;
-        tmp = cellfun(@cell2mat, tmp, 'UniformOutput', 0);
-        tmp = cellfun(@torow, tmp, 'UniformOutput', 0);
-        tmp = tocolumn(tmp);
-        tmp = cell2mat(tmp);
-        if ~makeords
-            tmp = num2cell(tmp);
-        end;
-        result = tmp;
-    elseif isempty(data)
-        result = [];
-    else   
-        result = {};
-        for i = 1:length(data)
-            result{i} = recurse(data{i}, level + 1, addit, makeords);
-        end;
-    end;
-end
-function result = iter_struct(data, level, addit, makeords)
-import yaml.*;
-result = struct();
-    for i = fields(data)'
-        fld = char(i);
-        result.(fld) = recurse(data.(fld), level + 1, addit, makeords);
-    end;
-end
-function result = scan_data(data, level, addit)
-import yaml.*;
-result = data;
-end
-function result = iscell_all(cellvec)
-import yaml.*;
-result = all(cellfun(@iscell, cellvec));
-end
-function result = isaligned_all(cellvec)
-import yaml.*;
-siz = numel(cellvec{1});
-    result = all(cellfun(@numel, cellvec) ==  siz);
-end
-function result = ismatrixrow_all(cellvec)
-import yaml.*;
-result = all(cellfun(@ismatrixrow, cellvec));
-end
-function result = ismatrixrow(cellvec)
-import yaml.*;
-result =         (isnumeric_all(cellvec) || islogical_all(cellvec) || isstruct_all(cellvec)) &&         issingle_all(cellvec) &&         iscompatible_all(cellvec);
-end
-function result = isnumeric_all(cellvec)
-import yaml.*;
-result = all(cellfun(@isnumeric, cellvec));
-end
-function result = islogical_all(cellvec)
-import yaml.*;
-result = all(cellfun(@islogical, cellvec));
-end
-function result = issingle_all(cellvec)
-import yaml.*;
-result = all(cellfun(@issingle, cellvec));
-end
-function result = iscompatible_all(cellvec)
-import yaml.*;
-result = true;
-    for i = 1:(length(cellvec) - 1)
-        result = result && iscompatible(cellvec{i}, cellvec{i + 1});
+function r = makematrices(r,recursive)
+% r = MAKEMATRICES(r) - Recursively walks through a Matlab hierarchy concatenating cell vectors
+%   of compatible(§) elements along the first singleton dimension of their elements.
+%
+% Specifically substitutes cell objects like
+%    
+%   {{1,2,3},{4,5,6}} -> [1,2,3;4,5,6]'
+%   {{{1,2},{3,4}},{{5,6},{7,8}}} -> cat(3,[1,2;3,4]',[5,6;7,8]')
+%
+% (§) structures with equal fields are also merged into N-d arrays.
+
+    import yaml.*;
+
+    % if ~makeords, return; end
+    if isempty(r), r = []; end
+    if iscell(r) && isscalar(r), r = makematrices(r{1},recursive); return; end
+    if isstruct(r)
+        for j = 1:numel(r)
+            for f = fieldnames(r)'
+                r(j).(f{1}) = makematrices(r(j).(f{1}),recursive);
+            end
+        end
+        return;
     end
-end
-function result = iscompatible(obj1, obj2)
-import yaml.*;
-result = isequal(class(obj1), class(obj2));
-end
-function result = isvector_all(cellvec)
-import yaml.*;
-result = all(cellfun(@isvector, cellvec));
-end
-function result = isstruct_all(cellvec)
-import yaml.*;
-result = all(cellfun(@isstruct, cellvec));
-end
-function result = torow(vec)
-import yaml.*;
-result = tocolumn(vec).';
-end
-function result = tocolumn(vec)
-import yaml.*;
-result = vec(:);
+    if ~iscell(r), return; end
+    
+    ok = isvector(r) && ~iscell(r{1});
+    
+    % Check equal class
+    ok = ok && all(cellfun(@(x) isequal(class(x),class(r{1})),r(2:end)));
+    
+    % Check equal size
+    ok = ok && all(cellfun(@(x) isequal(size(x),size(r{1})),r(2:end)));
+    
+    if ok && isstruct(r{1})
+    % Check equal fields
+        ok = all(cellfun(@(x) isempty(setxor(fieldnames(x),fieldnames(r{1}))),r(2:end)));
+    end
+    
+    if ok
+        if isscalar(r{1})
+            r = cat(1,r{:});
+        else
+            r = cat(ndims(r{1}),r{:});
+        end
+        r = makematrices(r,recursive);
+    else
+        r = cellfun(@(x) makematrices(x,recursive),r,'unif',0);
+        if recursive, r = makematrices(r,false); end
+    end
 end
