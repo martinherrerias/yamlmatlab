@@ -129,7 +129,7 @@ function result = perform_import(r)
     elseif ischar(r)
         result = {load_yaml(r)};
     else
-        disp(r);
+        dispyaml(r);
         error('Importer does not unterstand given filename. Invalid node displayed above.');
     end
 end
